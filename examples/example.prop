@@ -1,9 +1,11 @@
-add arg1 arg2 (Int, Int, Int) =
+(Int, Int, Int) add = (arg1 arg2) {
 	js = arg1 * arg2
 	js
+}
 
 result = add 2 1
 
-imp main =
+main = imp {
 	println "Hallo"
 	println result
+}
