@@ -1,0 +1,9 @@
+add arg1 arg2 (Int, Int, Int) =
+	js = arg1 * arg2
+	js
+
+result = add 2 1
+
+imp main =
+	println "Hallo"
+	println result

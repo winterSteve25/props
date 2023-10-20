@@ -1,0 +1,7 @@
+[package]
+name = "props_lsp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+props_parser = { path = "../props_parser" }
