@@ -1,11 +1,9 @@
-(Int, Int, Int) add = (arg1 arg2) {
-	js = arg1 * arg2
-	js
+add = |arg1 arg2| {
+	arg1 + arg2
 }
 
-result = add 2 1
+result = add 2 2
 
 main = imp {
-	println "Hallo"
 	println result
 }
