@@ -1,5 +1,5 @@
 add = |arg1 arg2| {
-	arg1 + arg2
+		arg1 + arg2
 }
 
 result = add 2 2

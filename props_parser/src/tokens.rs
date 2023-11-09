@@ -1,15 +1,32 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Ident(String),
-    KeyW(Keyword),
+    Unknown(String),
+
     Pipe,
     Whitespace,
     FuncOpen,
     FuncClose,
-    Unexpected(String),
-}
+    Assignment,
+    
+    Plus,
+    Minus,
+    Multiplication,
+    Division,
+    Mod,
+    Power,
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum Keyword {
-    Impure,
+    ParenthOpen,
+    ParenthClose,
+    
+    Not,
+    Equality,
+    GreaterThan,
+    LessThan,
+    GreaterEqual,
+    LessEqual,
+
+    Newline,
+    Indent(usize),
+    EOF,
 }
