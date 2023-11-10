@@ -1,10 +1,11 @@
+use crate::tokens::{Token, Number};
 use lazy_static::lazy_static;
 use regex::Regex;
 
-use crate::tokens::Token;
-
 lazy_static! {
     static ref IDENT_REGEX: Regex = Regex::new(r"[a-zA-Z0-9_]").unwrap();
+    static ref LETTER_REGEX: Regex = Regex::new(r"[a-zA-Z_]").unwrap();
+    static ref NUMBER_REGEX: Regex = Regex::new(r"[0-9.]").unwrap();
 }
 
 fn peak(chars: &[u8], i: usize) -> Option<char> {
@@ -19,7 +20,10 @@ fn is(chars: &[u8], i: usize, c: char) -> bool {
     peak(chars, i).map(|nc| nc == c).unwrap_or(false)
 }
 
-fn is_match<F>(chars: &[u8], i: usize, c: F) -> bool where F: Fn(char) -> bool {
+fn is_match<F>(chars: &[u8], i: usize, c: F) -> bool
+where
+    F: Fn(char) -> bool,
+{
     peak(chars, i).map(c).unwrap_or(false)
 }
 
@@ -32,6 +36,7 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
 
     match c {
         '|' => (Token::Pipe, i),
+        ':' => (Token::TypeAnnotator, i),
         ' ' => (Token::Whitespace, i),
         '{' => (Token::FuncOpen, i),
         '}' => (Token::FuncClose, i),
@@ -57,14 +62,14 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
             }
 
             (Token::GreaterThan, i)
-        },
+        }
         '<' => {
             if is(chars, i + 1, '=') {
                 return (Token::LessEqual, i + 1);
             }
 
             (Token::LessThan, i)
-        },
+        }
         '\n' => (Token::Newline, i),
         '\t' => {
             let mut new_i = i + 1;
@@ -76,10 +81,10 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
             }
 
             (Token::Indent(level), new_i - 1)
-        },
+        }
         _ => {
             // TODO: maybe possible to avoid .to_string everytime?
-            if IDENT_REGEX.is_match(&c.to_string()) {
+            if LETTER_REGEX.is_match(&c.to_string()) {
                 let mut ident = vec![c];
                 let mut new_i = i + 1;
 
@@ -91,13 +96,29 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
                 return (Token::Ident(ident.iter().collect()), new_i - 1);
             }
 
+            if NUMBER_REGEX.is_match(&c.to_string()) {
+                let mut number = vec![c];
+                let mut new_i = i + 1;
+                let mut has_decimal = false;
+
+                while is_match(chars, new_i, |nc| NUMBER_REGEX.is_match(&nc.to_string())) {
+                    number.push(chars[new_i] as char);
+                    new_i += 1;
+                }
+
+                let number_str: String = number.iter().collect();
+                if let Ok(num) = Number::parse_number(&number_str, has_decimal) {
+                    return (Token::Number(num), new_i - 1);
+                }
+            }
+
             (Token::Unknown(c.to_string()), i)
         }
     }
 }
 
-pub fn lex(source: String) -> Vec<Token> {
-    let mut tokens = Vec::<Token>::new();
+pub fn lex(source: String) -> Vec<(Token, usize)> {
+    let mut tokens = Vec::<(Token, usize)>::new();
     let chars = source.as_bytes();
     let mut i = 0;
 
@@ -106,9 +127,9 @@ pub fn lex(source: String) -> Vec<Token> {
             break;
         }
 
-        let (token, index) = next(chars, i);
+        let token = next(chars, i);
+        i = token.1 + 1;
         tokens.push(token);
-        i = index + 1;
     }
 
     tokens

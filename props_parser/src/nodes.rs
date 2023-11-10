@@ -17,6 +17,11 @@ pub enum Statement {
         column: usize,
         token: Token,
     },
+    UnknownToken {
+        line: usize,
+        column: usize,
+        token: String
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,13 +29,13 @@ pub enum Statement {
 pub enum Expression {
     MathExpr(MathExpr),
     StrLiteral(String),
+    FuncLiteral {
+        params: Vec<String>,
+        statements: Vec<Statement>
+    },
     FuncCall {
         func_name: String,
         params: Vec<Expression>,
-    },
-    Func {
-        params: Vec<String>,
-        statements: Vec<Statement>
     },
 }
 
