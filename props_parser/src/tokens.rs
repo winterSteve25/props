@@ -64,7 +64,7 @@ pub enum Token {
 
     Pipe,
     TypeAnnotator,
-    Whitespace,
+    Comma,
     FuncOpen,
     FuncClose,
     Assignment,
@@ -86,7 +86,26 @@ pub enum Token {
     GreaterEqual,
     LessEqual,
 
+    Whitespace,
     Newline,
     Indent(usize),
     EOF,
+}
+
+impl Token {
+    pub fn is_insignificant(&self) -> bool {
+        match self {
+            Token::Whitespace => true,
+            Token::Newline => true,
+            Token::Indent(_) => true,
+            _ => false
+        }
+    }
+
+    pub fn is_ident(&self) -> bool {
+        match self {
+            Token::Ident(_) => true,
+            _ => false,
+        }
+    }
 }

@@ -37,7 +37,7 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
     match c {
         '|' => (Token::Pipe, i),
         ':' => (Token::TypeAnnotator, i),
-        ' ' => (Token::Whitespace, i),
+        ',' => (Token::Comma, i),
         '{' => (Token::FuncOpen, i),
         '}' => (Token::FuncClose, i),
         '=' => {
@@ -70,6 +70,7 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
 
             (Token::LessThan, i)
         }
+        ' ' => (Token::Whitespace, i),
         '\n' => (Token::Newline, i),
         '\t' => {
             let mut new_i = i + 1;
@@ -102,7 +103,9 @@ fn next(chars: &[u8], i: usize) -> (Token, usize) {
                 let mut has_decimal = false;
 
                 while is_match(chars, new_i, |nc| NUMBER_REGEX.is_match(&nc.to_string())) {
-                    number.push(chars[new_i] as char);
+                    let c = chars[new_i] as char;
+                    has_decimal = c == '.';
+                    number.push(c);
                     new_i += 1;
                 }
 

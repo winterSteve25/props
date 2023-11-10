@@ -1,10 +1,1 @@
-add = |arg1:Int arg2:Int| {
-	arg1 + arg2
-}
-
-1invalidIdent = 40
-result = add 2 2
-
-main = imp {
-	println result
-}
+simple = 2.5

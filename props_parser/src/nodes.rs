@@ -1,26 +1,13 @@
-use crate::tokens::Token;
-
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
-pub enum Statement {
+pub enum AstNode {
     Assignment {
         names: Vec<String>,
         expr: Expression,
     },
-    ExpectedToken {
-        line: usize,
-        column: usize,
-        token: Token,
-    },
-    UnexpectedToken {
-        line: usize,
-        column: usize,
-        token: Token,
-    },
-    UnknownToken {
-        line: usize,
-        column: usize,
-        token: String
+    ImpFuncCall {
+        name: String,
+        expr: Expression
     }
 }
 
@@ -31,7 +18,7 @@ pub enum Expression {
     StrLiteral(String),
     FuncLiteral {
         params: Vec<String>,
-        statements: Vec<Statement>
+        statements: Vec<AstNode>
     },
     FuncCall {
         func_name: String,
