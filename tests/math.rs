@@ -6,13 +6,20 @@ mod test {
     use props_parser::tokens::Number::U8;
 
     #[test]
-    fn add() {
-        let mut parser = PropsParser::new("10 +5".to_string());
+    fn add_with_empty() {
+        let mut parser = PropsParser::new("         10 +  5".to_string());
         let result = parser.parse_additive_expr();
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), BinaryOp(
             Box::new(Literal(U8(10))),
             Box::new(Literal(U8(5))),
             Add));
+    }
+    
+    #[test]
+    fn add_fail() {
+        let mut parser = PropsParser::new("10 ++ 5".to_string());
+        let result = parser.parse_additive_expr();
+        assert!(result.is_err());
     }
 }

@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use crate::tokens::Token;
 use nodes::{AstNode, Expression};
 use thiserror::Error;
@@ -28,8 +29,8 @@ macro_rules! expect {
                 Some((token, pos)) => {
                     Err(ParserErr::UnexpectedToken {
                         line,
-                        pos: pos.clone(),
-                        token: token.clone(),
+                        pos: pos,
+                        token: token,
                     })
                 }
                 None => Err(ParserErr::UnexpectedEOF)
@@ -44,7 +45,7 @@ macro_rules! expect {
 macro_rules! ignore_empty_match {
     ($self:expr, $($pat:pat), *$(,)?) => {
         {
-            let mut current_pos = $self.cursor;
+            let mut current_pos = 0;
             
             loop {
                 if let Some((t, _)) = $self.tokens.get(current_pos) {
@@ -89,21 +90,17 @@ pub enum ParserErr {
 
 #[derive(Debug)]
 pub struct PropsParser {
-    tokens: Vec<(Token, usize)>,
+    tokens: VecDeque<(Token, usize)>,
     line: usize,
-    cursor: usize,
 }
 
 #[allow(dead_code)]
 impl PropsParser {
     pub fn new(source: String) -> Self {
         let tokens = Lexer::lex(source);
-        println!("{:?}", &tokens);
-
         PropsParser {
-            tokens,
+            tokens: VecDeque::from(tokens),
             line: 0,
-            cursor: 0,
         }
     }
 
@@ -141,14 +138,14 @@ impl PropsParser {
     }
 
     pub fn parse_additive_expr(&mut self) -> Result<MathExpr, ParserErr> {
-        let mut left = MathExpr::Literal(expect!(self, true, Token::Number(num) => Ok(num))?.clone());
+        let mut left = MathExpr::Literal(expect!(self, true, Token::Number(num) => Ok(num))?);
 
         while ignore_empty_match!(self, Token::Addition, Token::Subtraction) {
             let addition = expect!(self, true, Token::Addition => Ok(true), Token::Subtraction => Ok(false))?;
             let right = expect!(self, true, Token::Number(num) => Ok(num))?;
             left = MathExpr::BinaryOp(
                 Box::new(left),
-                Box::new(MathExpr::Literal(right.clone())),
+                Box::new(MathExpr::Literal(right)),
                 if addition { MathOp::Add } else { MathOp::Sub },
             );
         }
@@ -166,29 +163,23 @@ impl PropsParser {
         }
     }
 
-    fn next(&mut self) -> Option<&(Token, usize)> {
-        if self.cursor >= self.tokens.len() {
-            return None;
+    fn next(&mut self) -> Option<(Token, usize)> {
+        match self.tokens.pop_front() {
+            None => None,
+            Some(t) => {
+                if let Token::Newline = t.0 {
+                    self.line += 1;
+                }
+                
+                Some(t)
+            }
         }
-
-        let tok = &self.tokens[self.cursor];
-
-        if let Token::Newline = tok.0 {
-            self.line += 1;
-        }
-        
-        self.cursor += 1;
-
-        Some(tok)
     }
 
     fn peek(&mut self) -> Option<&(Token, usize)> {
-        let i = self.cursor;
-
-        if i >= self.tokens.len() {
-            return None;
+        match self.tokens.get(0) {
+            None => None,
+            Some(t) => Some(t)
         }
-
-        Some(&self.tokens[i])
     }
 }
