@@ -37,7 +37,9 @@ pub enum Identifier {
 #[derive(Debug, Clone, PartialEq)]
 pub enum MathExpr {
     Literal(Number),
-    BinaryOp(Box<MathExpr>, Box<MathExpr>, MathOp)
+    Identifier(Identifier),
+    BinaryOp(Box<MathExpr>, Box<MathExpr>, MathOp),
+    Negate(Box<MathExpr>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

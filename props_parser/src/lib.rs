@@ -22,9 +22,7 @@ macro_rules! expect {
             let line = $self.line;
             
             match $self.next() {
-                $(
-                    Some(($pat, _)) => $expr,
-                )*
+                $(Some(($pat, _)) => $expr,)*
                 #[allow(unreachable_patterns)]
                 Some((token, pos)) => {
                     Err(ParserErr::UnexpectedToken {
@@ -33,7 +31,7 @@ macro_rules! expect {
                         token: token,
                     })
                 }
-                None => Err(ParserErr::UnexpectedEOF)
+                None => panic!("This should not happen")
             }
         }
     };
@@ -83,9 +81,6 @@ pub enum ParserErr {
         token: Token,
         found: Token,
     },
-
-    #[error("Unexpected End of File")]
-    UnexpectedEOF,
 }
 
 #[derive(Debug)]
@@ -132,27 +127,52 @@ impl PropsParser {
     fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
         todo!()
     }
-
-    fn parse_math_expr(&mut self) -> Result<MathExpr, ParserErr> {
-        todo!()
+    
+    pub fn parse_math_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        self.parse_additive_expr()
     }
 
-    pub fn parse_additive_expr(&mut self) -> Result<MathExpr, ParserErr> {
-        let mut left = MathExpr::Literal(expect!(self, true, Token::Number(num) => Ok(num))?);
+    fn parse_additive_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        let mut left = self.parse_multiplicative_expr()?;
 
         while ignore_empty_match!(self, Token::Addition, Token::Subtraction) {
-            let addition = expect!(self, true, Token::Addition => Ok(true), Token::Subtraction => Ok(false))?;
-            let right = expect!(self, true, Token::Number(num) => Ok(num))?;
+            let operation = expect!(self, true, Token::Addition => Ok(MathOp::Add), Token::Subtraction => Ok(MathOp::Sub))?;
+            let right = self.parse_multiplicative_expr()?;
             left = MathExpr::BinaryOp(
                 Box::new(left),
-                Box::new(MathExpr::Literal(right)),
-                if addition { MathOp::Add } else { MathOp::Sub },
+                Box::new(right),
+                operation
             );
         }
 
         Ok(left)
     }
 
+    fn parse_multiplicative_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        let mut left = self.parse_parenth_expr()?;
+
+        while ignore_empty_match!(self, Token::Multiplication, Token::Division, Token::Power, Token::Mod) {
+            let operation = expect! {
+                self,
+                true,
+                Token::Multiplication => Ok(MathOp::Mul),
+                Token::Division => Ok(MathOp::Div),
+                Token::Power => Ok(MathOp::Pow),
+                Token::Mod => Ok(MathOp::Mod)
+            }?;
+            
+            let right = self.parse_parenth_expr()?;
+            
+            left = MathExpr::BinaryOp(
+                Box::new(left),
+                Box::new(right),
+                operation
+            );
+        }
+
+        Ok(left)
+    }
+    
     fn skip_empty(&mut self) {
         while let Some(tok) = self.peek() {
             if !tok.0.is_insignificant() {
@@ -170,7 +190,7 @@ impl PropsParser {
                 if let Token::Newline = t.0 {
                     self.line += 1;
                 }
-                
+
                 Some(t)
             }
         }
