@@ -49,8 +49,8 @@ impl Lexer {
 
                 (Token::Assignment, i)
             }
-            '+' => (Token::Plus, i),
-            '-' => (Token::Minus, i),
+            '+' => (Token::Addition, i),
+            '-' => (Token::Subtraction, i),
             '*' => (Token::Multiplication, i),
             '/' => (Token::Division, i),
             '%' => (Token::Mod, i),

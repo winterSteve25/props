@@ -1,18 +1,23 @@
-use std::sync::Mutex;
 use crate::tokens::Token;
 use nodes::{AstNode, Expression};
 use thiserror::Error;
 use crate::lexer::Lexer;
-use crate::nodes::{Identifier, MathExpr};
+use crate::nodes::{Identifier, MathExpr, MathOp};
 
-pub mod lexer;
+mod lexer;
+pub mod nodes;
+pub mod tokens;
 
-mod nodes;
-mod tokens;
-
+/**
+ * Given pattern(s) to match with, returns a Err(ParserErr) if no matches found, if found, returns the result of the expression
+ **/
 macro_rules! expect {
-    ($self:expr, $($pat:pat => $expr:expr), *$(,)?) => {
+    ($self:expr, $skip_empty:expr, $($pat:pat => $expr:expr), *$(,)?) => {
         {
+            if $skip_empty {
+                $self.skip_empty();
+            }
+            
             let line = $self.line;
             
             match $self.next() {
@@ -32,14 +37,18 @@ macro_rules! expect {
         }
     };
 }
-macro_rules! ignore_ws_has_token_next {
+
+/**
+ * Returns true if the next significant token matches any pattern given  
+ **/
+macro_rules! ignore_empty_match {
     ($self:expr, $($pat:pat), *$(,)?) => {
         {
-            let mut current_pos = $self.pos;
+            let mut current_pos = $self.cursor;
             
             loop {
                 if let Some((t, _)) = $self.tokens.get(current_pos) {
-                    if let Token::Whitespace = t { 
+                    if t.is_insignificant() { 
                         current_pos += 1;
                     } else { 
                         break;
@@ -82,7 +91,7 @@ pub enum ParserErr {
 pub struct PropsParser {
     tokens: Vec<(Token, usize)>,
     line: usize,
-    pos: usize,
+    cursor: usize,
 }
 
 #[allow(dead_code)]
@@ -94,7 +103,7 @@ impl PropsParser {
         PropsParser {
             tokens,
             line: 0,
-            pos: 0,
+            cursor: 0,
         }
     }
 
@@ -122,14 +131,29 @@ impl PropsParser {
     fn parse_expr(&mut self) -> Result<Expression, ParserErr> {
         todo!()
     }
-    
+
     fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
         todo!()
     }
-    
+
     fn parse_math_expr(&mut self) -> Result<MathExpr, ParserErr> {
-        let left = expect!(self, Token::Number(Num) => Ok(Num))?;
         todo!()
+    }
+
+    pub fn parse_additive_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        let mut left = MathExpr::Literal(expect!(self, true, Token::Number(num) => Ok(num))?.clone());
+
+        while ignore_empty_match!(self, Token::Addition, Token::Subtraction) {
+            let addition = expect!(self, true, Token::Addition => Ok(true), Token::Subtraction => Ok(false))?;
+            let right = expect!(self, true, Token::Number(num) => Ok(num))?;
+            left = MathExpr::BinaryOp(
+                Box::new(left),
+                Box::new(MathExpr::Literal(right.clone())),
+                if addition { MathOp::Add } else { MathOp::Sub },
+            );
+        }
+
+        Ok(left)
     }
 
     fn skip_empty(&mut self) {
@@ -141,30 +165,30 @@ impl PropsParser {
             self.next();
         }
     }
-    
+
     fn next(&mut self) -> Option<&(Token, usize)> {
-        self.pos += 1;
-        
-        if self.pos >= self.tokens.len() { 
-            return None;
-        } 
-        
-        let tok = &self.tokens[self.pos];
-        
-        if let Token::Newline = tok.0 { 
-            self.line += 1;
-        } 
-        
-        Some(tok)
-    }
-    
-    fn peek(&mut self) -> Option<&(Token, usize)> {
-        let i = self.pos + 1;
-        
-        if i >= self.tokens.len() { 
+        if self.cursor >= self.tokens.len() {
             return None;
         }
+
+        let tok = &self.tokens[self.cursor];
+
+        if let Token::Newline = tok.0 {
+            self.line += 1;
+        }
         
+        self.cursor += 1;
+
+        Some(tok)
+    }
+
+    fn peek(&mut self) -> Option<&(Token, usize)> {
+        let i = self.cursor;
+
+        if i >= self.tokens.len() {
+            return None;
+        }
+
         Some(&self.tokens[i])
     }
 }

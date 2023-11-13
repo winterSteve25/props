@@ -84,9 +84,9 @@ pub enum Token {
     FuncOpen,
     FuncClose,
     Assignment,
-    
-    Plus,
-    Minus,
+
+    Addition,
+    Subtraction,
     Multiplication,
     Division,
     Mod,
