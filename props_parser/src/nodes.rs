@@ -1,19 +1,20 @@
+use crate::tokens::Number;
+
 #[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
 pub enum AstNode {
     Assignment {
-        names: Vec<String>,
+        name: Identifier,
         expr: Expression,
     },
     ImpFuncCall {
-        name: String,
+        name: Expression,
         expr: Expression
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
 pub enum Expression {
+    Identifier(Identifier),
     MathExpr(MathExpr),
     StrLiteral(String),
     FuncLiteral {
@@ -27,9 +28,15 @@ pub enum Expression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[allow(dead_code)]
+pub enum Identifier {
+    Identifier(String),
+    Accessor(String, Box<Identifier>),
+    Compound(Vec<Identifier>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum MathExpr {
-    Number(i32),
+    Literal(Number),
     Add(Box<MathExpr>, Box<MathExpr>),
     Sub(Box<MathExpr>, Box<MathExpr>),
     Mul(Box<MathExpr>, Box<MathExpr>),

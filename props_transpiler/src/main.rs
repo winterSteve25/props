@@ -4,8 +4,11 @@ use props_parser::PropsParser;
 
 fn main() {
 
-    let source_content = fs::read_to_string("../examples/example.prop")
+    let source_content = fs::read_to_string("./examples/example.prop")
         .expect("Err to read example source");
 
-    let _parser = PropsParser::new(source_content);
+    let mut parser = PropsParser::new(source_content);
+    let result = parser.parse();
+    
+    println!("{:?}", result);
 }

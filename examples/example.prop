@@ -1,1 +1,15 @@
-simple = 2.5
+simple, hallo = 2.5, 5
+line2 = 8
+
+exampleFunc = |param1:F32 param2:F32|: F32 {
+    // comment: this is the implemention of a function
+    // last line is automatically returned
+    line2 + hallo + param1 * param2
+} 
+
+// main function is an impure function with no parameters
+main = {
+    println exampleFunc 4 8
+    // function call should have right hand precedent 
+    // so the function call above would be (println (exampleFunc 4 8))
+}

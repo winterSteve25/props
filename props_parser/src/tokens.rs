@@ -45,6 +45,21 @@ impl Number {
             }
         }
     }
+    
+    pub fn len(&self) -> usize {
+        match self {
+            Number::U8(num) => num.to_string().len(),
+            Number::U16(num) => num.to_string().len(),
+            Number::U32(num) => num.to_string().len(),
+            Number::U64(num) => num.to_string().len(),
+            Number::I8(num) => num.to_string().len(),
+            Number::I16(num) => num.to_string().len(),
+            Number::I32(num) => num.to_string().len(),
+            Number::I64(num) => num.to_string().len(),
+            Number::F32(num) => num.to_string().len(),
+            Number::F64(num) => num.to_string().len(),
+        }
+    }
 }
 
 impl std::str::FromStr for Number {
@@ -65,6 +80,7 @@ pub enum Token {
     Pipe,
     TypeAnnotator,
     Comma,
+    Period,
     FuncOpen,
     FuncClose,
     Assignment,
@@ -108,4 +124,16 @@ impl Token {
             _ => false,
         }
     }
+    
+    pub fn len(&self) -> usize {
+        match self {
+            Token::Ident(id) => id.len(),
+            Token::Unknown(i) => i.len(),
+            Token::Number(num) => num.len(),
+            Token::Equality => 2,
+            Token::Indent(lvl) => lvl * 4,
+            Token::EOF => 0,
+            _ => 1,
+        }
+    } 
 }

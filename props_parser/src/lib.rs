@@ -1,7 +1,8 @@
 use crate::tokens::Token;
 use nodes::{AstNode, Expression};
-use std::{iter::Peekable, vec::IntoIter};
 use thiserror::Error;
+use crate::lexer::Lexer;
+use crate::nodes::Identifier;
 
 pub mod lexer;
 
@@ -10,24 +11,48 @@ mod tokens;
 
 macro_rules! expect {
     ($self:expr, $($pat:pat => $expr:expr), *$(,)?) => {
-        match $self.tokens.next() {
-            $(
-                Some(($pat, pos)) => {
-                    $self.pos = pos;
-                    return $expr;
-                },
-            )*
-            #[allow(unreachable_patterns)]
-            Some((token, pos)) => {
-                $self.pos = pos;
+        {
+            let line = $self.line;
+            
+            match $self.next() {
+                $(
+                    Some(($pat, _)) => $expr,
+                )*
+                #[allow(unreachable_patterns)]
+                Some((token, pos)) => {
+                    Err(ParserErr::UnexpectedToken {
+                        line,
+                        pos: pos.clone(),
+                        token: token.clone(),
+                    })
+                }
+                None => Err(ParserErr::UnexpectedEOF)
+            }
+        }
+    };
+}
 
-                Err(ParserErr::UnexpectedToken {
-                    line: $self.line,
-                    pos,
-                    token
-                })
-            },
-            None => Err(ParserErr::UnexpectedEOF)
+macro_rules! ignore_ws_has_token_next {
+    ($self:expr, $($pat:pat), *$(,)?) => {
+        {
+            let mut current_pos = $self.pos;
+            
+            loop {
+                if let Some((t, _)) = $self.tokens.get(current_pos) {
+                    if let Token::Whitespace = t { 
+                        current_pos += 1;
+                    } else { 
+                        break;
+                    }
+                } else { 
+                    break;
+                }
+            }
+            
+            match $self.tokens.get(current_pos) {
+                $(Some(($pat, _)) => true,)*
+                _ => false,
+            }
         }
     };
 }
@@ -54,8 +79,9 @@ pub enum ParserErr {
 }
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct PropsParser {
-    tokens: Peekable<IntoIter<(Token, usize)>>,
+    tokens: Vec<(Token, usize)>,
     line: usize,
     pos: usize,
 }
@@ -63,11 +89,11 @@ pub struct PropsParser {
 #[allow(dead_code)]
 impl PropsParser {
     pub fn new(source: String) -> Self {
-        let tokens = lexer::lex(source);
+        let tokens = Lexer::lex(source);
         println!("{:?}", &tokens);
 
         PropsParser {
-            tokens: tokens.into_iter().peekable(),
+            tokens,
             line: 0,
             pos: 0,
         }
@@ -79,65 +105,62 @@ impl PropsParser {
         // skip all starting empty tokens
         self.skip_empty();
 
-        while let Ok(Some(node)) = self.parse_node() {
-            result.push(node);
+        loop {
+            match self.parse_node() {
+                Ok(Some(node)) => result.push(node),
+                Ok(None) => break,
+                Err(err) => println!("{:?}", err),
+            }
         }
 
         return result;
     }
 
     fn parse_node(&mut self) -> Result<Option<AstNode>, ParserErr> {
-        match self.tokens.next() {
-            Some(token) => match &token.0 {
-                Token::Ident(id) => expect! {
-                    self,
-                    // followed by = is an expression would be an assignment
-                    Token::Assignment => {
-                        let expr = self.parse_expr()?;
-                        Ok(Some(AstNode::Assignment { names: vec![id.clone()], expr }))
-                    },
-                    // if followed by comma it will be deconstructing
-                    Token::Comma => {
-                        let mut idents = self.parse_idents_comma_delim();
-                        idents.insert(0, id.clone());
-                        let expr = self.parse_expr()?;
-                        Ok(Some(AstNode::Assignment { names: idents, expr }))
-                    },
-                    // identifier followed by an expression would be an impure function call
-                    _ => {
-                        let expr = self.parse_expr()?;
-                        Ok(Some(AstNode::ImpFuncCall { name: id.clone(), expr }))
-                    }
-                },
-                _ => Err(ParserErr::UnexpectedToken {
-                    line: self.line,
-                    pos: token.1,
-                    token: token.0.clone(),
-                }),
-            },
-            None => Ok(None),
-        }
+        todo!()
     }
 
     fn parse_expr(&mut self) -> Result<Expression, ParserErr> {
         todo!()
     }
-
-    fn parse_idents_comma_delim(&mut self) -> Vec<String> {
+    
+    fn parse_ident() -> Result<Identifier, ParserErr> {
         todo!()
     }
 
     fn skip_empty(&mut self) {
-        while let Some(tok) = self.tokens.peek() {
-            if let Token::Newline = tok.0 {
-                self.line += 1;
-            }
-
+        while let Some(tok) = self.peek() {
             if !tok.0.is_insignificant() {
                 break;
             }
 
-            self.tokens.next();
+            self.next();
         }
+    }
+    
+    fn next(&mut self) -> Option<&(Token, usize)> {
+        self.pos += 1;
+        
+        if self.pos >= self.tokens.len() { 
+            return None;
+        } 
+        
+        let tok = &self.tokens[self.pos];
+        
+        if let Token::Newline = tok.0 { 
+            self.line += 1;
+        } 
+        
+        Some(tok)
+    }
+    
+    fn peek(&mut self) -> Option<&(Token, usize)> {
+        let i = self.pos + 1;
+        
+        if i >= self.tokens.len() { 
+            return None;
+        }
+        
+        Some(&self.tokens[i])
     }
 }
