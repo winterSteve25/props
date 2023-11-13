@@ -1,8 +1,9 @@
+use std::sync::Mutex;
 use crate::tokens::Token;
 use nodes::{AstNode, Expression};
 use thiserror::Error;
 use crate::lexer::Lexer;
-use crate::nodes::Identifier;
+use crate::nodes::{Identifier, MathExpr};
 
 pub mod lexer;
 
@@ -31,7 +32,6 @@ macro_rules! expect {
         }
     };
 }
-
 macro_rules! ignore_ws_has_token_next {
     ($self:expr, $($pat:pat), *$(,)?) => {
         {
@@ -78,7 +78,6 @@ pub enum ParserErr {
     UnexpectedEOF,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub struct PropsParser {
     tokens: Vec<(Token, usize)>,
@@ -124,7 +123,12 @@ impl PropsParser {
         todo!()
     }
     
-    fn parse_ident() -> Result<Identifier, ParserErr> {
+    fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
+        todo!()
+    }
+    
+    fn parse_math_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        let left = expect!(self, Token::Number(Num) => Ok(Num))?;
         todo!()
     }
 
