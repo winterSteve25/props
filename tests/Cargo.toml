@@ -8,5 +8,9 @@ publish = false
 props_parser = { path = "../props_parser" }
 
 [[test]]
-name = "math"
+name = "math_parsing"
 path = "math.rs"
+
+[[test]]
+name = "ident_parsing"
+path = "ident.rs"

@@ -1,6 +1,8 @@
+mod ident;
+
 #[cfg(test)]
-mod test {
-    use props_parser::nodes::MathExpr::{BinaryOp, Literal};
+mod math_tests {
+    use props_parser::nodes::MathExpr::{BinaryOp, Literal, Negate};
     use props_parser::nodes::MathOp::{Add, Div, Mul, Pow, Sub};
     use props_parser::PropsParser;
     use props_parser::tokens::Number::U8;
@@ -48,26 +50,80 @@ mod test {
     }
 
     #[test]
-    fn arithmetic() {
-        let mut parser = PropsParser::new("3 * 2 +4/2^2".to_string());
+    fn arithmetic_no_parenthesis() {
+        let mut parser = PropsParser::new("3 * 2 +4 /2^2".to_string());
         let result = parser.parse_math_expr();
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), BinaryOp(
             Box::new(BinaryOp(
                 Box::new(Literal(U8(3))),
                 Box::new(Literal(U8(2))),
-                Mul
+                Mul,
             )),
             Box::new(BinaryOp(
                 Box::new(BinaryOp(
-                   Box::new(Literal(U8(4))),
-                   Box::new(Literal(U8(2))),
-                    Div
+                    Box::new(Literal(U8(4))),
+                    Box::new(Literal(U8(2))),
+                    Div,
                 )),
                 Box::new(Literal(U8(2))),
-                Pow
+                Pow,
             )),
-            Add
+            Add,
         ));
+    }
+
+    #[test]
+    fn arithmetic() {
+        let mut parser = PropsParser::new("3 * (2 + 1)".to_string());
+        let result = parser.parse_math_expr();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), BinaryOp(
+            Box::new(Literal(U8(3))),
+            Box::new(BinaryOp(
+                Box::new(Literal(U8(2))),
+                Box::new(Literal(U8(1))),
+                Add,
+            )),
+            Mul,
+        ));
+    }
+
+    #[test]
+    fn negation() {
+        let mut parser = PropsParser::new("3 * -3".to_string());
+        let result = parser.parse_math_expr();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), BinaryOp(
+            Box::new(Literal(U8(3))),
+            Box::new(Negate(Box::new(Literal(U8(3))))),
+            Mul,
+        ));
+    }
+
+    #[test]
+    fn negation_opp_order() {
+        let mut parser = PropsParser::new("-3 * 3".to_string());
+        let result = parser.parse_math_expr();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), BinaryOp(
+            Box::new(Negate(Box::new(Literal(U8(3))))),
+            Box::new(Literal(U8(3))),
+            Mul,
+        ));
+    }
+
+    #[test]
+    fn negate_expr() {
+        let mut parser = PropsParser::new("-(3 * 3)".to_string());
+        let result = parser.parse_math_expr();
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Negate(Box::new(
+            BinaryOp(
+                Box::new(Literal(U8(3))),
+                Box::new(Literal(U8(3))),
+                Mul,
+            )
+        )));
     }
 }

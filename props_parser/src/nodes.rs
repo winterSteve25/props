@@ -7,8 +7,8 @@ pub enum AstNode {
         expr: Expression,
     },
     ImpFuncCall {
-        name: Expression,
-        expr: Expression
+        name: Identifier,
+        arguments: Vec<Expression>
     }
 }
 
@@ -30,8 +30,19 @@ pub enum Expression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Identifier {
     Identifier(String),
-    Accessor(String, Box<Identifier>),
+    Accessor(Box<Identifier>, Box<Identifier>),
     Compound(Vec<Identifier>),
+}
+
+impl Identifier {
+    pub fn compound(self, other: Identifier) -> Identifier {
+        if let Identifier::Compound(mut v) = self {
+            v.push(other);
+            return Identifier::Compound(v);
+        }
+        
+        Identifier::Compound(vec![self, other])
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

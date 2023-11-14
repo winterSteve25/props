@@ -117,22 +117,63 @@ impl PropsParser {
     }
 
     fn parse_node(&mut self) -> Result<Option<AstNode>, ParserErr> {
-        todo!()
+        
+        if self.peek().is_none() { 
+            Ok(None)
+        } 
+        
+        let ident = self.parse_ident()?;
+        if ignore_empty_match!(self, Token::Assignment) { 
+            expect!(self, true, Token::Assignment => Ok(()))?;
+            let expr = self.parse_expr()?;
+            return Ok(Some(AstNode::Assignment {
+                name: ident,
+                expr,
+            }));
+        } 
+        
+        expect!(self, false, Token::Whitespace => Ok(()))?;
+        let mut exprs: Vec<Expression> = Vec::new();
+        
+        while let Ok(expr) = self.parse_expr() {
+            exprs.push(expr);
+        }
+        
+        Ok(Some(AstNode::ImpFuncCall {
+            name: ident,
+            arguments: exprs,
+        }))
     }
 
     fn parse_expr(&mut self) -> Result<Expression, ParserErr> {
-        todo!()
-    }
-
-    fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
-        todo!()
+        expect! {
+            self,
+            true,
+            Token::Ident(_) => Ok(Expression::Identifier(self.parse_ident()?)),
+            Token::Number(_) 
+                | Token::Subtraction
+                | Token::ParenthOpen => Ok(Expression::MathExpr(self.parse_math_expr()?)),
+        }
     }
     
-    pub fn parse_math_expr(&mut self) -> Result<MathExpr, ParserErr> {
-        self.parse_additive_expr()
+    pub fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
+        let mut ident = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str)))?;
+        
+        while ignore_empty_match!(self, Token::Period, Token::Comma) { 
+            let accessor = expect!(self, true, Token::Period => Ok(true), Token::Comma => Ok(false))?;
+            let extra_ident = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str)))?;
+            
+            if accessor { 
+                ident = Identifier::Accessor(Box::new(ident), Box::new(extra_ident));
+            } else { 
+                ident = ident.compound(extra_ident);
+            }
+        } 
+        
+        Ok(ident)
     }
 
-    fn parse_additive_expr(&mut self) -> Result<MathExpr, ParserErr> {
+    pub fn parse_math_expr(&mut self) -> Result<MathExpr, ParserErr> {
         let mut left = self.parse_multiplicative_expr()?;
 
         while ignore_empty_match!(self, Token::Addition, Token::Subtraction) {
@@ -147,7 +188,7 @@ impl PropsParser {
 
         Ok(left)
     }
-
+    
     fn parse_multiplicative_expr(&mut self) -> Result<MathExpr, ParserErr> {
         let mut left = self.parse_parenth_expr()?;
 
@@ -171,6 +212,26 @@ impl PropsParser {
         }
 
         Ok(left)
+    }
+    
+    fn parse_parenth_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        if ignore_empty_match!(self, Token::ParenthOpen) { 
+            expect!(self, true, Token::ParenthOpen => Ok(()))?;
+            let result = self.parse_math_expr()?;
+            expect!(self, true, Token::ParenthClose => Ok(()))?;
+            return Ok(result);
+        }
+        
+        self.parse_unary_expr()
+    }
+    
+    fn parse_unary_expr(&mut self) -> Result<MathExpr, ParserErr> {
+        if ignore_empty_match!(self, Token::Subtraction) {
+            expect!(self, true, Token::Subtraction => Ok(()))?;
+            Ok(MathExpr::Negate(Box::new(self.parse_parenth_expr()?)))
+        } else {
+            expect!(self, true, Token::Number(num) => Ok(MathExpr::Literal(num)))
+        } 
     }
     
     fn skip_empty(&mut self) {
