@@ -14,3 +14,7 @@ path = "math.rs"
 [[test]]
 name = "ident_parsing"
 path = "ident.rs"
+
+[[test]]
+name = "ast_parsing"
+path = "parse.rs"

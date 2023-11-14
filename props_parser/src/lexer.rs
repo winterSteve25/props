@@ -1,6 +1,7 @@
-use crate::tokens::{Token, Number};
+use crate::tokens::Token;
 use lazy_static::lazy_static;
 use regex::Regex;
+use crate::number::Number;
 
 lazy_static! {
     static ref IDENT_REGEX: Regex = Regex::new(r"[a-zA-Z0-9_]").unwrap();
@@ -40,6 +41,18 @@ impl Lexer {
             ':' => (Token::TypeAnnotator, i),
             ',' => (Token::Comma, i),
             '.' => (Token::Period, i),
+            '"' => {
+                let mut str = Vec::new();
+                let mut new_i = i + 1;
+
+                while Lexer::is_match(chars, new_i, |nc| nc != '"') {
+                    str.push(chars[new_i] as char);
+                    new_i += 1;
+                }
+
+                // not new_i - 1 to consume the ending "
+                return (Token::StringLiteral(str.iter().collect()), new_i);
+            },
             '{' => (Token::FuncOpen, i),
             '}' => (Token::FuncClose, i),
             '=' => {

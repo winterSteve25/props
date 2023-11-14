@@ -5,7 +5,7 @@ mod math_tests {
     use props_parser::nodes::MathExpr::{BinaryOp, Literal, Negate};
     use props_parser::nodes::MathOp::{Add, Div, Mul, Pow, Sub};
     use props_parser::PropsParser;
-    use props_parser::tokens::Number::U8;
+    use props_parser::number::Number::U8;
 
     #[test]
     fn add_with_empty() {

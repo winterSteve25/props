@@ -1,4 +1,4 @@
-use crate::tokens::Number;
+use crate::number::Number;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
@@ -22,8 +22,8 @@ pub enum Expression {
         statements: Vec<AstNode>
     },
     FuncCall {
-        func_name: String,
-        params: Vec<Expression>,
+        func_name: Identifier,
+        arguments: Vec<Expression>,
     },
 }
 
