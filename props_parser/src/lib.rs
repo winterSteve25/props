@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use colored::Colorize;
 use crate::tokens::Token;
 use nodes::{AstNode, Expression};
 use thiserror::Error;
@@ -84,26 +85,49 @@ pub enum ParserErr {
     },
 }
 
+impl ParserErr {
+    fn print(&self, source: &str) {
+        println!();
+        println!("{}", self.to_string().red());
+        
+        let (line, pos, token) = match self {
+            ParserErr::UnexpectedToken { line, pos, token } => (line, pos, token),
+            ParserErr::ExpectedToken { line, pos, token: _token, found } => (line, pos, found)
+        };
+
+        let text = source.lines().nth(*line).unwrap();
+        println!("  | ");
+        println!("{} | {}", line.to_string().blue(), text);
+
+        let pointer: String = " ".repeat(pos - token.len() + 1) + &"^".repeat(token.len());
+        println!("  | {}", pointer.red());
+        println!();
+    }
+}
+
 #[derive(Debug)]
 pub struct PropsParser {
     tokens: VecDeque<(Token, usize)>,
+    source: String,
     line: usize,
 }
 
 #[allow(dead_code)]
 impl PropsParser {
     pub fn new(source: String) -> Self {
-        let tokens = Lexer::lex(source);
+        let tokens = Lexer::lex(&source);
         
         PropsParser {
             tokens: VecDeque::from(tokens),
+            source,
             line: 0,
         }
     }
 
-    pub fn parse(&mut self) -> Vec<AstNode> {
-        let mut result = Vec::new();
-
+    pub fn parse(&mut self) -> (Vec<AstNode>, Vec<ParserErr>) {
+        let mut result = Vec::new(); 
+        let mut errs = Vec::new();
+        
         // skip all starting empty tokens
         self.skip_empty();
 
@@ -111,11 +135,14 @@ impl PropsParser {
             match self.parse_node() {
                 Ok(Some(node)) => result.push(node),
                 Ok(None) => break,
-                Err(err) => println!("{:?}", err),
+                Err(err) => {
+                    err.print(&self.source);
+                    errs.push(err);
+                }
             }
         }
 
-        return result;
+        return (result, errs);
     }
 
     fn parse_node(&mut self) -> Result<Option<AstNode>, ParserErr> {

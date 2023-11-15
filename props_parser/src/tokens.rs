@@ -62,6 +62,8 @@ impl Token {
             Token::Unknown(i) => i.len(),
             Token::Number(num) => num.len(),
             Token::Equality => 2,
+            Token::GreaterEqual => 2,
+            Token::LessEqual => 2,
             Token::Indent(lvl) => lvl * 4,
             Token::EOF => 0,
             _ => 1,

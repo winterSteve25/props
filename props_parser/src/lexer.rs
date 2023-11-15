@@ -153,7 +153,7 @@ impl Lexer {
         (Token::Unknown(c.to_string()), i)
     }
 
-    pub fn lex(source: String) -> Vec<(Token, usize)> {
+    pub fn lex(source: &str) -> Vec<(Token, usize)> {
         let mut tokens = Vec::<(Token, usize)>::new();
         let mut lines = source.lines();
 

@@ -11,7 +11,7 @@ mod parse_tests {
     fn assignment_math() {
         let mut parser = PropsParser::new(r"josh = 2 * 2".to_string());
         let result = parser.parse();
-        assert_eq!(result, vec![AstNode::Assignment(
+        assert_eq!(result.0, vec![AstNode::Assignment(
             Identifier::Identifier("josh".to_string(), Type::None),
             Expression::MathExpr(BinaryOp(
                 Box::new(Literal(U8(2))),
@@ -25,7 +25,7 @@ mod parse_tests {
     fn impure_call() {
         let mut parser = PropsParser::new(r"println hi hi2".to_string());
         let result = parser.parse();
-        assert_eq!(result, vec![AstNode::ImpFuncCall(
+        assert_eq!(result.0, vec![AstNode::ImpFuncCall(
             Identifier::Identifier("println".to_string(), Type::None),
             vec![
                 Expression::Identifier(Identifier::Identifier("hi".to_string(), Type::None)),
@@ -38,7 +38,7 @@ mod parse_tests {
     fn function_call_in_impure_call() {
         let mut parser = PropsParser::new(r"println (add 1 2)".to_string());
         let result = parser.parse();
-        assert_eq!(result, vec![AstNode::ImpFuncCall(
+        assert_eq!(result.0, vec![AstNode::ImpFuncCall(
             Identifier::Identifier("println".to_string(), Type::None),
             vec![
                 Expression::FuncCall(
@@ -56,7 +56,7 @@ mod parse_tests {
     fn str_literal() {
         let mut parser = PropsParser::new("str = \"josh\"".to_string());
         let result = parser.parse();
-        assert_eq!(result, vec![AstNode::Assignment(
+        assert_eq!(result.0, vec![AstNode::Assignment(
             Identifier::Identifier("str".to_string(), Type::None),
             Expression::StrLiteral("josh".to_string()),
         )]);
@@ -66,7 +66,7 @@ mod parse_tests {
     fn str_literal_argument() {
         let mut parser = PropsParser::new("println \"hello, world!\"".to_string());
         let result = parser.parse();
-        assert_eq!(result, vec![AstNode::ImpFuncCall(
+        assert_eq!(result.0, vec![AstNode::ImpFuncCall(
             Identifier::Identifier("println".to_string(), Type::None),
             vec![Expression::StrLiteral("hello, world!".to_string())],
         )]);
@@ -76,7 +76,7 @@ mod parse_tests {
     fn typed_assignment() {
         let mut parser = PropsParser::new("number: I32 = 32".to_string());
         let result = parser.parse();
-        assert_eq!(result, vec![AstNode::Assignment(
+        assert_eq!(result.0, vec![AstNode::Assignment(
             Identifier::Identifier("number".to_string(), Type::Defined("I32".to_string())),
             Expression::MathExpr(Literal(U8(32))),
         )]);
@@ -86,6 +86,6 @@ mod parse_tests {
     fn invalid_typed_accessor() {
         let mut parser = PropsParser::new("obj.field: I32 = 32".to_string());
         let result = parser.parse();
-        
+        assert_eq!(result.1.len(), 1);
     }
 }
