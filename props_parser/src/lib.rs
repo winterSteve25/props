@@ -111,7 +111,7 @@ impl PropsParser {
             match self.parse_node() {
                 Ok(Some(node)) => result.push(node),
                 Ok(None) => break,
-                Err(err) => panic!("{:?}", err),
+                Err(err) => println!("{:?}", err),
             }
         }
 
@@ -123,26 +123,27 @@ impl PropsParser {
             return Ok(None);
         }
 
+        if peek_match_ignore_ws!(self, 0, Token::Return) { 
+            expect!(self, true, Token::Return => Ok(()))?;
+            let expr = self.parse_expr()?;
+            return Ok(Some(AstNode::Return(expr)));
+        } 
+        
         let ident = self.parse_ident()?;
 
         // regular assignment
         if peek_match_ignore_ws!(self, 0, Token::Assignment) {
             expect!(self, true, Token::Assignment => Ok(()))?;
             let expr = self.parse_expr()?;
-            return Ok(Some(AstNode::Assignment {
-                name: ident,
-                expr,
-            }));
+            return Ok(Some(AstNode::Assignment(ident, expr)));
         }
 
         // impure function call
-        Ok(Some(AstNode::ImpFuncCall {
-            name: ident,
-            arguments: self.parse_ws_delimited_exprs()?,
-        }))
+        Ok(Some(AstNode::ImpFuncCall(ident, self.parse_ws_delimited_exprs()?)))
     }
 
     fn parse_expr(&mut self) -> Result<Expression, ParserErr> {
+
         if peek_match_ignore_ws!(self, 0, Token::Ident(_)) {
             return Ok(Expression::Identifier(self.parse_ident()?));
         }
@@ -153,10 +154,7 @@ impl PropsParser {
             let ident = self.parse_ident()?;
             let arguments = self.parse_ws_delimited_exprs()?;
             expect!(self, true, Token::ParenthClose => Ok(()))?;
-            return Ok(Expression::FuncCall {
-                func_name: ident,
-                arguments,
-            });
+            return Ok(Expression::FuncCall(ident, arguments));
         }
         
         if peek_match_ignore_ws!(self, 0, Token::Number(_), Token::Subtraction, Token::ParenthOpen) {
@@ -230,15 +228,16 @@ impl PropsParser {
     fn parse_simple_ident(&mut self) -> Result<Identifier, ParserErr> {
         let str = expect!(self, true, Token::Ident(str) => Ok(str))?;
         
-        if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) { 
+        if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) {
+            expect!(self, true, Token::TypeAnnotator => Ok(()))?;
             let type_ = expect!(self, true, Token::Ident(str) => Ok(str))?;
-            return Ok(Identifier::Identifier(str, Some(Type::Defined(type_))));
+            return Ok(Identifier::Identifier(str, Type::Defined(type_)));
         }
         
-        let mut ident = Identifier::Identifier(str, None);
+        let mut ident = Identifier::Identifier(str, Type::None);
         while peek_match_ignore_ws!(self, 0, Token::Period) {
             expect!(self, true, Token::Period => Ok(()))?;
-            let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str, None)))?;
+            let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str, Type::None)))?;
             ident = Identifier::Accessor(Box::new(ident), Box::new(rhs));
         }
             

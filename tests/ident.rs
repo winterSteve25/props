@@ -2,13 +2,14 @@
 mod ident_tests {
     use props_parser::nodes::Identifier;
     use props_parser::PropsParser;
+    use props_parser::types::Type;
 
     #[test]
     fn simple() {
         let mut parser = PropsParser::new("hello".to_string());
         let result = parser.parse_ident();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Identifier::Identifier("hello".to_string(), None));
+        assert_eq!(result.unwrap(), Identifier::Identifier("hello".to_string(), Type::None));
     }
     
     #[test]
@@ -19,8 +20,8 @@ mod ident_tests {
         assert_eq!(
             result.unwrap(), 
             Identifier::Accessor(
-                Box::new(Identifier::Identifier("obj".to_string(), None)),
-                Box::new(Identifier::Identifier("field".to_string(), None))
+                Box::new(Identifier::Identifier("obj".to_string(), Type::None)),
+                Box::new(Identifier::Identifier("field".to_string(), Type::None))
             )
         );
     }
@@ -33,8 +34,8 @@ mod ident_tests {
         assert_eq!(
             result.unwrap(),
             Identifier::Compound(vec![
-                Identifier::Identifier("j1".to_string(), None),
-                Identifier::Identifier("j2".to_string(), None),
+                Identifier::Identifier("j1".to_string(), Type::None),
+                Identifier::Identifier("j2".to_string(), Type::None),
             ])
         );
     }
@@ -48,10 +49,10 @@ mod ident_tests {
             result.unwrap(),
             Identifier::Compound(vec![
                 Identifier::Accessor(
-                    Box::new(Identifier::Identifier("obj".to_string(), None)),
-                    Box::new(Identifier::Identifier("field".to_string(), None))
+                    Box::new(Identifier::Identifier("obj".to_string(), Type::None)),
+                    Box::new(Identifier::Identifier("field".to_string(), Type::None))
                 ),
-                Identifier::Identifier("j2".to_string(), None),
+                Identifier::Identifier("j2".to_string(), Type::None),
             ])
         );
     }

@@ -14,6 +14,7 @@ pub enum Token {
     FuncOpen,
     FuncClose,
     Assignment,
+    Return,
 
     Addition,
     Subtraction,

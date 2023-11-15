@@ -9,6 +9,8 @@ lazy_static! {
     static ref NUMBER_REGEX: Regex = Regex::new(r"[0-9.]").unwrap();
 }
 
+const RETURN_WORD_LEN: usize = 6;
+
 pub struct Lexer;
 impl Lexer {
     fn get_char(chars: &[u8], i: usize) -> Option<char> {
@@ -98,44 +100,57 @@ impl Lexer {
 
                 (Token::Indent(level), new_i - 1)
             }
-            _ => {
-                // TODO: maybe possible to avoid .to_string everytime?
-                if LETTER_REGEX.is_match(&c.to_string()) {
-                    let mut ident = vec![c];
-                    let mut new_i = i + 1;
-
-                    while Lexer::is_match(chars, new_i, |nc| IDENT_REGEX.is_match(&nc.to_string())) {
-                        ident.push(chars[new_i] as char);
-                        new_i += 1;
-                    }
-
-                    return (Token::Ident(ident.iter().collect()), new_i - 1);
+            'r' => {
+                if i + RETURN_WORD_LEN < chars.len() { 
+                    let word = &chars[i..i + RETURN_WORD_LEN];
+                    return match std::str::from_utf8(word) {
+                        Ok(str) => if str == "return" { (Token::Return, i + RETURN_WORD_LEN) } else { Lexer::tokenize_else(c, chars, i) }  
+                        Err(_) => Lexer::tokenize_else(c, chars, i)
+                    };
                 }
+                
+                Lexer::tokenize_else(c, chars, i)
+            }
+            _ => Lexer::tokenize_else(c, chars, i)
+        }
+    }
+    
+    fn tokenize_else(c: char, chars: &[u8], i: usize) -> (Token, usize) {
+        // TODO: maybe possible to avoid .to_string everytime?
+        if LETTER_REGEX.is_match(&c.to_string()) {
+            let mut ident = vec![c];
+            let mut new_i = i + 1;
 
-                if NUMBER_REGEX.is_match(&c.to_string()) {
-                    let mut number = vec![c];
-                    let mut new_i = i + 1;
-                    let mut has_decimal = false;
+            while Lexer::is_match(chars, new_i, |nc| IDENT_REGEX.is_match(&nc.to_string())) {
+                ident.push(chars[new_i] as char);
+                new_i += 1;
+            }
 
-                    while Lexer::is_match(chars, new_i, |nc| NUMBER_REGEX.is_match(&nc.to_string())) {
-                        let c = chars[new_i] as char;
-                        number.push(c);
-                        new_i += 1;
+            return (Token::Ident(ident.iter().collect()), new_i - 1);
+        }
 
-                        if !has_decimal {
-                            has_decimal = c == '.';
-                        }
-                    }
+        if NUMBER_REGEX.is_match(&c.to_string()) {
+            let mut number = vec![c];
+            let mut new_i = i + 1;
+            let mut has_decimal = false;
 
-                    let number_str: String = number.iter().collect();
-                    if let Ok(num) = Number::parse_number(&number_str, has_decimal) {
-                        return (Token::Number(num), new_i - 1);
-                    }
+            while Lexer::is_match(chars, new_i, |nc| NUMBER_REGEX.is_match(&nc.to_string())) {
+                let c = chars[new_i] as char;
+                number.push(c);
+                new_i += 1;
+
+                if !has_decimal {
+                    has_decimal = c == '.';
                 }
+            }
 
-                (Token::Unknown(c.to_string()), i)
+            let number_str: String = number.iter().collect();
+            if let Ok(num) = Number::parse_number(&number_str, has_decimal) {
+                return (Token::Number(num), new_i - 1);
             }
         }
+
+        (Token::Unknown(c.to_string()), i)
     }
 
     pub fn lex(source: String) -> Vec<(Token, usize)> {

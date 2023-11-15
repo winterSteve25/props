@@ -2,14 +2,9 @@ use crate::types::{Number, Type};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
-    Assignment {
-        name: Identifier,
-        expr: Expression,
-    },
-    ImpFuncCall {
-        name: Identifier,
-        arguments: Vec<Expression>
-    },
+    Assignment(Identifier, Expression),
+    ImpFuncCall(Identifier, Vec<Expression>),
+    Return(Expression),
     Expression(Expression),
 }
 
@@ -23,15 +18,12 @@ pub enum Expression {
         statements: Vec<AstNode>,
         return_type: Type,
     },
-    FuncCall {
-        func_name: Identifier,
-        arguments: Vec<Expression>,
-    },
+    FuncCall(Identifier, Vec<Expression>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Identifier {
-    Identifier(String, Option<Type>),
+    Identifier(String, Type),
     Accessor(Box<Identifier>, Box<Identifier>),
     Compound(Vec<Identifier>),
 }

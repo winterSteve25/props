@@ -4,12 +4,13 @@ line2 = 8
 add: F32 = |param1: F32 param2: F32| {
     // comment: this is the implemention of a function
     // last line is automatically returned
-    param1 + param2
+    return param1 + param2
 } 
 
 // main function is an impure function with no parameters
 main: None = {
-    println exampleFunc 4 8
+    println (exampleFunc 4 8)
+    
     // function call should have right hand precedent 
     // so the function call above would be (println (exampleFunc 4 8))
 }
