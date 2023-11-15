@@ -2,7 +2,7 @@ use props_parser::PropsParser;
 
 fn main() {
 
-    let mut parser = PropsParser::new("obj.field.josh = \"josh\"".to_string());
+    let mut parser = PropsParser::new("obj.field.josh, hi = \"josh\", 2".to_string());
     let result = parser.parse();
     
     // let source_content = fs::read_to_string("./examples/example.prop")

@@ -19,6 +19,18 @@ pub enum Expression {
         return_type: Type,
     },
     FuncCall(Identifier, Vec<Expression>),
+    Compound(Vec<Expression>),
+}
+
+impl Expression {
+    pub fn compound(self, other: Expression) -> Expression {
+        if let Expression::Compound(mut v) = self {
+            v.push(other);
+            return Expression::Compound(v);
+        }
+
+        Expression::Compound(vec![self, other])
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

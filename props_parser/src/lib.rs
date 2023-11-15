@@ -88,7 +88,7 @@ pub enum ParserErr {
 impl ParserErr {
     fn print(&self, source: &str) {
         println!();
-        println!("{}", self.to_string().red());
+        println!("Parsing Error: {}", self.to_string().red());
         
         let (line, pos, token) = match self {
             ParserErr::UnexpectedToken { line, pos, token } => (line, pos, token),
@@ -170,29 +170,25 @@ impl PropsParser {
     }
 
     fn parse_expr(&mut self) -> Result<Expression, ParserErr> {
-
-        if peek_match_ignore_ws!(self, 0, Token::Ident(_)) {
-            return Ok(Expression::Identifier(self.parse_ident()?));
+        
+        let mut expr = if peek_match_ignore_ws!(self, 0, Token::Ident(_)) {
+            Ok(Expression::Identifier(self.parse_ident()?))
         }
-
         // (ident ... -> function call
-        if peek_match_ignore_ws!(self, 0, Token::ParenthOpen) && peek_match_ignore_ws!(self, 1, Token::Ident(_)) {
+        else if peek_match_ignore_ws!(self, 0, Token::ParenthOpen) && peek_match_ignore_ws!(self, 1, Token::Ident(_)) {
             expect!(self, true, Token::ParenthOpen => Ok(()))?;
             let ident = self.parse_ident()?;
             let arguments = self.parse_ws_delimited_exprs()?;
             expect!(self, true, Token::ParenthClose => Ok(()))?;
-            return Ok(Expression::FuncCall(ident, arguments));
+            Ok(Expression::FuncCall(ident, arguments))
         }
-        
-        if peek_match_ignore_ws!(self, 0, Token::Number(_), Token::Subtraction, Token::ParenthOpen) {
-            return Ok(Expression::MathExpr(self.parse_math_expr()?));
+        else if peek_match_ignore_ws!(self, 0, Token::Number(_), Token::Subtraction, Token::ParenthOpen) {
+            Ok(Expression::MathExpr(self.parse_math_expr()?))
         }
-        
-        if peek_match_ignore_ws!(self, 0, Token::StringLiteral(_)) { 
-            return expect!(self, true, Token::StringLiteral(str) => Ok(Expression::StrLiteral(str)));
-        } 
-        
-        // if peek_match_ignore_ws!(self, 0, Token::Pipe, Token::FuncOpen) { 
+        else if peek_match_ignore_ws!(self, 0, Token::StringLiteral(_)) { 
+            expect!(self, true, Token::StringLiteral(str) => Ok(Expression::StrLiteral(str)))
+        }
+        // else if peek_match_ignore_ws!(self, 0, Token::Pipe, Token::FuncOpen) { 
         //     let has_params = expect!(self, true, Token::Pipe => Ok(true), Token::FuncOpen => Ok(false))?;
         //     let mut params = vec![];
         //     
@@ -203,21 +199,30 @@ impl PropsParser {
         //         }
         //     }
         //     
-        //     return Ok(Expression::FuncLiteral {
+        //     Ok(Expression::FuncLiteral {
         //         params,
         //         statements: vec![],
         //         return_type: todo!(),
         //     })
         // }
+        else {
+            // wouldn't panic because if we reached EOF parse_expr wouldn't be called
+            let token = self.next().unwrap();
 
-        // wouldn't panic because if we reached EOF parse_expr wouldn't be called
-        let token = self.next().unwrap();
+            Err(ParserErr::UnexpectedToken {
+                line: self.line,
+                pos: token.1,
+                token: token.0,
+            })
+        }?;
 
-        Err(ParserErr::UnexpectedToken {
-            line: self.line,
-            pos: token.1,
-            token: token.0,
-        })
+        while peek_match_ignore_ws!(self, 0, Token::Comma) {
+            expect!(self, true, Token::Comma => Ok(()))?;
+            let expr2 = self.parse_expr()?;
+            expr = expr.compound(expr2);
+        }
+        
+        Ok(expr)
     }
 
     fn parse_ws_delimited_exprs(&mut self) -> Result<Vec<Expression>, ParserErr> {
