@@ -8,7 +8,7 @@ mod ident_tests {
         let mut parser = PropsParser::new("hello".to_string());
         let result = parser.parse_ident();
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), Identifier::Identifier("hello".to_string()));
+        assert_eq!(result.unwrap(), Identifier::Identifier("hello".to_string(), None));
     }
     
     #[test]
@@ -19,8 +19,8 @@ mod ident_tests {
         assert_eq!(
             result.unwrap(), 
             Identifier::Accessor(
-                Box::new(Identifier::Identifier("obj".to_string())),
-                Box::new(Identifier::Identifier("field".to_string()))
+                Box::new(Identifier::Identifier("obj".to_string(), None)),
+                Box::new(Identifier::Identifier("field".to_string(), None))
             )
         );
     }
@@ -33,8 +33,8 @@ mod ident_tests {
         assert_eq!(
             result.unwrap(),
             Identifier::Compound(vec![
-                Identifier::Identifier("j1".to_string()),
-                Identifier::Identifier("j2".to_string()),
+                Identifier::Identifier("j1".to_string(), None),
+                Identifier::Identifier("j2".to_string(), None),
             ])
         );
     }
@@ -48,10 +48,10 @@ mod ident_tests {
             result.unwrap(),
             Identifier::Compound(vec![
                 Identifier::Accessor(
-                    Box::new(Identifier::Identifier("obj".to_string())),
-                    Box::new(Identifier::Identifier("field".to_string()))
+                    Box::new(Identifier::Identifier("obj".to_string(), None)),
+                    Box::new(Identifier::Identifier("field".to_string(), None))
                 ),
-                Identifier::Identifier("j2".to_string()),
+                Identifier::Identifier("j2".to_string(), None),
             ])
         );
     }

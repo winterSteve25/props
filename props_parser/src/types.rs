@@ -69,3 +69,9 @@ impl std::str::FromStr for Number {
         Number::parse_number(s, has_decimal)
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Type {
+    None,
+    Defined(String),
+}

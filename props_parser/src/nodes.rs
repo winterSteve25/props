@@ -1,4 +1,4 @@
-use crate::number::Number;
+use crate::types::{Number, Type};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AstNode {
@@ -9,7 +9,8 @@ pub enum AstNode {
     ImpFuncCall {
         name: Identifier,
         arguments: Vec<Expression>
-    }
+    },
+    Expression(Expression),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -18,8 +19,9 @@ pub enum Expression {
     MathExpr(MathExpr),
     StrLiteral(String),
     FuncLiteral {
-        params: Vec<String>,
-        statements: Vec<AstNode>
+        params: Vec<(String, Type)>,
+        statements: Vec<AstNode>,
+        return_type: Type,
     },
     FuncCall {
         func_name: Identifier,
@@ -29,7 +31,7 @@ pub enum Expression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Identifier {
-    Identifier(String),
+    Identifier(String, Option<Type>),
     Accessor(Box<Identifier>, Box<Identifier>),
     Compound(Vec<Identifier>),
 }

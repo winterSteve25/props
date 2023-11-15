@@ -4,11 +4,12 @@ use nodes::{AstNode, Expression};
 use thiserror::Error;
 use crate::lexer::Lexer;
 use crate::nodes::{Identifier, MathExpr, MathOp};
+use crate::types::Type;
 
 mod lexer;
 mod tokens;
 pub mod nodes;
-pub mod number;
+pub mod types;
 
 /**
  * Given pattern(s) to match with, returns a Err(ParserErr) if no matches found, if found, returns the result of the expression
@@ -171,15 +172,16 @@ impl PropsParser {
         //     let mut params = vec![];
         //     
         //     if has_params {
-        //         
         //         while !peek_match_ignore_ws!(self, 0, Token::Pipe) {
+        //             let id = expect!(self, true, Token::Ident(id) => Ok(id))?;
         //             
         //         }
         //     }
         //     
         //     return Ok(Expression::FuncLiteral {
-        //         params: params,
+        //         params,
         //         statements: vec![],
+        //         return_type: todo!(),
         //     })
         // }
 
@@ -212,21 +214,34 @@ impl PropsParser {
             Ok(vec![])
         }
     }
-
+    
     pub fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
-        let mut ident = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str)))?;
+        let mut ident = self.parse_simple_ident()?;
 
-        while peek_match_ignore_ws!(self, 0, Token::Period, Token::Comma) {
-            let accessor = expect!(self, true, Token::Period => Ok(true), Token::Comma => Ok(false))?;
-            let extra_ident = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str)))?;
-
-            if accessor {
-                ident = Identifier::Accessor(Box::new(ident), Box::new(extra_ident));
-            } else {
-                ident = ident.compound(extra_ident);
-            }
+        while peek_match_ignore_ws!(self, 0, Token::Comma) {
+            expect!(self, true, Token::Comma => Ok(()))?;
+            let rhs = self.parse_simple_ident()?;
+            ident = ident.compound(rhs);
         }
-
+        
+        Ok(ident)
+    }
+    
+    fn parse_simple_ident(&mut self) -> Result<Identifier, ParserErr> {
+        let str = expect!(self, true, Token::Ident(str) => Ok(str))?;
+        
+        if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) { 
+            let type_ = expect!(self, true, Token::Ident(str) => Ok(str))?;
+            return Ok(Identifier::Identifier(str, Some(Type::Defined(type_))));
+        }
+        
+        let mut ident = Identifier::Identifier(str, None);
+        while peek_match_ignore_ws!(self, 0, Token::Period) {
+            expect!(self, true, Token::Period => Ok(()))?;
+            let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str, None)))?;
+            ident = Identifier::Accessor(Box::new(ident), Box::new(rhs));
+        }
+            
         Ok(ident)
     }
 

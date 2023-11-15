@@ -1,7 +1,7 @@
 use crate::tokens::Token;
 use lazy_static::lazy_static;
 use regex::Regex;
-use crate::number::Number;
+use crate::types::Number;
 
 lazy_static! {
     static ref IDENT_REGEX: Regex = Regex::new(r"[a-zA-Z0-9_]").unwrap();
