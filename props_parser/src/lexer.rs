@@ -31,14 +31,14 @@ impl Lexer {
         Lexer::get_char(chars, i).map(c).unwrap_or(false)
     }
 
-    fn next_token(chars: &[u8], i: usize) -> (Token, usize) {
-        if i >= chars.len() {
-            return (Token::EOF, i);
-        }
-
+    fn next_token(chars: &[u8], i: usize) -> Option<(Token, usize)> {
+        if i >= chars.len() { 
+            return None;
+        } 
+        
         let c = chars[i] as char;
 
-        match c {
+        Some(match c {
             '|' => (Token::Pipe, i),
             ':' => (Token::TypeAnnotator, i),
             ',' => (Token::Comma, i),
@@ -53,13 +53,13 @@ impl Lexer {
                 }
 
                 // not new_i - 1 to consume the ending "
-                return (Token::StringLiteral(str.iter().collect()), new_i);
+                return Some((Token::StringLiteral(str.iter().collect()), new_i));
             },
             '{' => (Token::FuncOpen, i),
             '}' => (Token::FuncClose, i),
             '=' => {
                 if Lexer::is(chars, i + 1, '=') {
-                    return (Token::Equality, i + 1);
+                    return Some((Token::Equality, i + 1));
                 }
 
                 (Token::Assignment, i)
@@ -67,7 +67,20 @@ impl Lexer {
             '+' => (Token::Addition, i),
             '-' => (Token::Subtraction, i),
             '*' => (Token::Multiplication, i),
-            '/' => (Token::Division, i),
+            '/' => {
+                if Lexer::is(chars, i + 1, '/') {
+                    let mut new_i = i + 2;
+
+                    while Lexer::is_match(chars, new_i, |nc| nc != '\n') {
+                        new_i += 1;
+                    }
+                    
+                    // + 1 because not directly returning therefore not advancing
+                    return Lexer::next_token(chars, new_i + 1);
+                }
+
+                (Token::Division, i)
+            },
             '%' => (Token::Mod, i),
             '^' => (Token::Power, i),
             '(' => (Token::ParenthOpen, i),
@@ -75,20 +88,19 @@ impl Lexer {
             '!' => (Token::Not, i),
             '>' => {
                 if Lexer::is(chars, i + 1, '=') {
-                    return (Token::GreaterEqual, i + 1);
+                    return Some((Token::GreaterEqual, i + 1));
                 }
 
                 (Token::GreaterThan, i)
             }
             '<' => {
                 if Lexer::is(chars, i + 1, '=') {
-                    return (Token::LessEqual, i + 1);
+                    return Some((Token::LessEqual, i + 1));
                 }
 
                 (Token::LessThan, i)
             }
             ' ' => (Token::Whitespace, i),
-            '\n' => (Token::Newline, i),
             '\t' => {
                 let mut new_i = i + 1;
                 let mut level = 1;
@@ -104,15 +116,15 @@ impl Lexer {
                 if i + RETURN_WORD_LEN < chars.len() { 
                     let word = &chars[i..i + RETURN_WORD_LEN];
                     return match std::str::from_utf8(word) {
-                        Ok(str) => if str == "return" { (Token::Return, i + RETURN_WORD_LEN) } else { Lexer::tokenize_else(c, chars, i) }  
-                        Err(_) => Lexer::tokenize_else(c, chars, i)
+                        Ok(str) => Some(if str == "return" { (Token::Return, i + RETURN_WORD_LEN) } else { Lexer::tokenize_else(c, chars, i) }),
+                        Err(_) => Some(Lexer::tokenize_else(c, chars, i))
                     };
                 }
                 
                 Lexer::tokenize_else(c, chars, i)
             }
             _ => Lexer::tokenize_else(c, chars, i)
-        }
+        })
     }
     
     fn tokenize_else(c: char, chars: &[u8], i: usize) -> (Token, usize) {
@@ -161,11 +173,20 @@ impl Lexer {
             let mut i = 0;
             let chars = line.as_bytes();
 
-            while i <= chars.len() {
+            loop {
                 let token = Lexer::next_token(chars, i);
+                
+                if token.is_none() { 
+                    break
+                } 
+                
+                let token = token.unwrap();
+                
                 i = token.1 + 1;
                 tokens.push(token);
             }
+            
+            tokens.push((Token::Newline, i));
         }
 
         tokens

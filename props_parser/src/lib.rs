@@ -29,7 +29,7 @@ macro_rules! expect {
                 #[allow(unreachable_patterns)]
                 Some((token, pos)) => {
                     Err(ParserErr::UnexpectedToken {
-                        line,
+                        line: line + 1,
                         pos: pos,
                         token: token,
                     })
@@ -86,7 +86,7 @@ pub enum ParserErr {
 }
 
 impl ParserErr {
-    fn print(&self, source: &str) {
+    fn print(&self, source: &Vec<String>) {
         println!();
         println!("Parsing Error: {}", self.to_string().red());
         
@@ -95,11 +95,11 @@ impl ParserErr {
             ParserErr::ExpectedToken { line, pos, token: _token, found } => (line, pos, found)
         };
 
-        let text = source.lines().nth(*line).unwrap();
+        let text = &source[*line - 1];
         println!("  | ");
         println!("{} | {}", line.to_string().blue(), text);
 
-        let pointer: String = " ".repeat(pos - token.len() + 1) + &"^".repeat(token.len());
+        let pointer: String = " ".repeat(if pos > &0 { pos - token.len() + 1 } else { 0 } ) + &"^".repeat(token.len());
         println!("  | {}", pointer.red());
         println!();
     }
@@ -108,7 +108,7 @@ impl ParserErr {
 #[derive(Debug)]
 pub struct PropsParser {
     tokens: VecDeque<(Token, usize)>,
-    source: String,
+    source: Vec<String>,
     line: usize,
 }
 
@@ -119,7 +119,7 @@ impl PropsParser {
         
         PropsParser {
             tokens: VecDeque::from(tokens),
-            source,
+            source: source.lines().map(String::from).collect(),
             line: 0,
         }
     }
@@ -128,10 +128,10 @@ impl PropsParser {
         let mut result = Vec::new(); 
         let mut errs = Vec::new();
         
-        // skip all starting empty tokens
-        self.skip_empty();
-
         loop {
+            // skip all starting empty tokens
+            self.skip_empty();
+            
             match self.parse_node() {
                 Ok(Some(node)) => result.push(node),
                 Ok(None) => break,
@@ -146,7 +146,7 @@ impl PropsParser {
     }
 
     fn parse_node(&mut self) -> Result<Option<AstNode>, ParserErr> {
-        if let Some((Token::EOF, _)) = self.peek() {
+        if let None = self.peek() {
             return Ok(None);
         }
 
@@ -171,6 +171,8 @@ impl PropsParser {
 
     fn parse_expr(&mut self) -> Result<Expression, ParserErr> {
         
+        // TODO: when its for example: ident + ident, how to know to parse that as a MathExpr?
+        // TODO: and when: (ident + ident) function call or MathExpr??
         let mut expr = if peek_match_ignore_ws!(self, 0, Token::Ident(_)) {
             Ok(Expression::Identifier(self.parse_ident()?))
         }
@@ -188,29 +190,49 @@ impl PropsParser {
         else if peek_match_ignore_ws!(self, 0, Token::StringLiteral(_)) { 
             expect!(self, true, Token::StringLiteral(str) => Ok(Expression::StrLiteral(str)))
         }
-        // else if peek_match_ignore_ws!(self, 0, Token::Pipe, Token::FuncOpen) { 
-        //     let has_params = expect!(self, true, Token::Pipe => Ok(true), Token::FuncOpen => Ok(false))?;
-        //     let mut params = vec![];
-        //     
-        //     if has_params {
-        //         while !peek_match_ignore_ws!(self, 0, Token::Pipe) {
-        //             let id = expect!(self, true, Token::Ident(id) => Ok(id))?;
-        //             
-        //         }
-        //     }
-        //     
-        //     Ok(Expression::FuncLiteral {
-        //         params,
-        //         statements: vec![],
-        //         return_type: todo!(),
-        //     })
-        // }
+        else if peek_match_ignore_ws!(self, 0, Token::Pipe, Token::FuncOpen) { 
+            let has_params = expect!(self, true, Token::Pipe => Ok(true), Token::FuncOpen => Ok(false))?;
+            let mut params = vec![];
+            
+            let statements = if has_params {
+                loop {
+                    let id = expect!(self, true, Token::Ident(id) => Ok(id))?;
+                    let type_ = if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) {
+                        expect!(self, true, Token::TypeAnnotator => Ok(()))?;
+                        expect!(self, true, Token::Ident(id) => Ok(Type::Defined(id)))?
+                    } else { 
+                        Type::None
+                    };
+                    
+                    params.push((id, type_));
+                    
+                    if let Some((Token::Whitespace, _)) = self.peek() { 
+                        self.next();
+                    }
+                    
+                    if peek_match_ignore_ws!(self, 0, Token::Pipe) { 
+                        expect!(self, true, Token::Pipe => Ok(()))?;
+                        break;
+                    }
+                }
+                
+                self.parse_function_body()?
+            } else { 
+                self.parse_function_body()?
+            };
+            
+            Ok(Expression::FuncLiteral {
+                params,
+                statements,
+                return_type: Type::None,
+            })
+        }
         else {
             // wouldn't panic because if we reached EOF parse_expr wouldn't be called
             let token = self.next().unwrap();
 
             Err(ParserErr::UnexpectedToken {
-                line: self.line,
+                line: self.line + 1,
                 pos: token.1,
                 token: token.0,
             })
@@ -223,6 +245,24 @@ impl PropsParser {
         }
         
         Ok(expr)
+    }
+    
+    fn parse_function_body(&mut self) -> Result<Vec<AstNode>, ParserErr> {
+        let mut result = vec![];
+        
+        expect!(self, true, Token::FuncOpen => Ok(()))?;
+
+        while !peek_match_ignore_ws!(self, 0, Token::FuncClose) {
+            if let Some(ast) = self.parse_node()? {
+                result.push(ast);
+            } else { 
+                break;
+            }
+        }
+        
+        expect!(self, true, Token::FuncClose => Ok(()))?;
+        
+        Ok(result)
     }
 
     fn parse_ws_delimited_exprs(&mut self) -> Result<Vec<Expression>, ParserErr> {

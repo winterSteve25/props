@@ -36,7 +36,6 @@ pub enum Token {
     Whitespace,
     Newline,
     Indent(usize),
-    EOF,
 }
 
 impl Token {
@@ -65,7 +64,6 @@ impl Token {
             Token::GreaterEqual => 2,
             Token::LessEqual => 2,
             Token::Indent(lvl) => lvl * 4,
-            Token::EOF => 0,
             _ => 1,
         }
     } 
