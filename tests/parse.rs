@@ -4,7 +4,7 @@ mod parse_tests {
     use props_parser::nodes::MathExpr::{BinaryOp, Literal};
     use props_parser::nodes::MathOp::Mul;
     use props_parser::types::Number::U8;
-    use props_parser::PropsParser;
+    use props_parser::parser::PropsParser;
     use props_parser::types::Type;
 
     #[test]

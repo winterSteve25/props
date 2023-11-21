@@ -1,5 +1,5 @@
 use std::fs;
-use props_parser::PropsParser;
+use props_parser::parser::PropsParser;
 
 fn main() {
 

@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod ident_tests {
     use props_parser::nodes::Identifier;
-    use props_parser::PropsParser;
+    use props_parser::parser::PropsParser;
     use props_parser::types::Type;
 
     #[test]
