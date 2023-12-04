@@ -10,16 +10,14 @@ pub enum AstNode {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
-    Identifier(Identifier),
     MathExpr(MathExpr),
     StrLiteral(String),
+    Compound(Vec<Expression>),
     FuncLiteral {
         params: Vec<(String, Type)>,
         statements: Vec<AstNode>,
         return_type: Type,
     },
-    FuncCall(Identifier, Vec<Expression>),
-    Compound(Vec<Expression>),
 }
 
 impl Expression {
@@ -57,6 +55,7 @@ pub enum MathExpr {
     Identifier(Identifier),
     BinaryOp(Box<MathExpr>, Box<MathExpr>, MathOp),
     Negate(Box<MathExpr>),
+    FuncCall(Identifier, Vec<Expression>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

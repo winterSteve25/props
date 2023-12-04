@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod parse_tests {
-    use props_parser::nodes::{AstNode, Expression, Identifier};
+    use props_parser::nodes::{AstNode, Expression, Identifier, MathExpr};
     use props_parser::nodes::MathExpr::{BinaryOp, Literal};
     use props_parser::nodes::MathOp::Mul;
     use props_parser::types::Number::U8;
@@ -28,8 +28,8 @@ mod parse_tests {
         assert_eq!(result.0, vec![AstNode::ImpFuncCall(
             Identifier::Identifier("println".to_string(), Type::None),
             vec![
-                Expression::Identifier(Identifier::Identifier("hi".to_string(), Type::None)),
-                Expression::Identifier(Identifier::Identifier("hi2".to_string(), Type::None))
+                Expression::MathExpr(MathExpr::Identifier(Identifier::Identifier("hi".to_string(), Type::None))),
+                Expression::MathExpr(MathExpr::Identifier(Identifier::Identifier("hi2".to_string(), Type::None))),
             ],
         )]);
     }
@@ -41,13 +41,13 @@ mod parse_tests {
         assert_eq!(result.0, vec![AstNode::ImpFuncCall(
             Identifier::Identifier("println".to_string(), Type::None),
             vec![
-                Expression::FuncCall(
+                Expression::MathExpr(MathExpr::FuncCall(
                     Identifier::Identifier("add".to_string(), Type::None),
                     vec![
                         Expression::MathExpr(Literal(U8(1))),
                         Expression::MathExpr(Literal(U8(2)))
                     ],
-                ),
+                )),
             ],
         )]);
     }
