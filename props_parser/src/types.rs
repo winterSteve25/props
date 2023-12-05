@@ -73,5 +73,7 @@ impl std::str::FromStr for Number {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     None,
+    Undefined,
+    Function(Box<Type>),
     Defined(String),
 }

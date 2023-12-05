@@ -1,5 +1,5 @@
 use std::fs;
-use props_parser::parser::PropsParser;
+use props_parser::pipeline::PropsPipeline;
 
 fn main() {
 
@@ -9,8 +9,8 @@ fn main() {
     let source_content = fs::read_to_string("./examples/example.prop")
         .expect("Err to read example source");
     
-    let mut parser = PropsParser::new(source_content);
-    let result = parser.parse();
+    let mut parser = PropsPipeline::default();
+    let result = parser.parse(source_content);
     
     println!("{:?}", result);
 }

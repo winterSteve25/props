@@ -71,16 +71,20 @@ pub struct PropsParser {
 
 #[allow(dead_code)]
 impl PropsParser {
-    pub fn new(source: String) -> Self {
-        let tokens = Lexer::lex(&source);
-
+    pub fn new() -> Self {
         PropsParser {
-            tokens: VecDeque::from(tokens),
-            source: source.lines().map(String::from).collect(),
+            tokens: VecDeque::new(),
+            source: vec![],
             line: 0,
             parsing_ws_delim: false,
             ws_delim_in_parenth: false,
         }
+    }
+    
+    pub fn init(&mut self, source: String) {
+        let tokens = Lexer::lex(&source);
+        self.tokens = VecDeque::from(tokens);
+        self.source = source.lines().map(String::from).collect();
     }
 
     pub fn parse(&mut self) -> (Vec<AstNode>, Vec<ParserErr>) {
@@ -242,7 +246,7 @@ impl PropsParser {
             return Ok(Identifier::Identifier(str, Type::Defined(type_)));
         }
 
-        let mut ident = Identifier::Identifier(str, Type::None);
+        let mut ident = Identifier::Identifier(str, Type::Undefined);
         while peek_match_ignore_ws!(self, 0, Token::Period) {
             expect!(self, true, Token::Period => Ok(()))?;
             let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str, Type::None)))?;
