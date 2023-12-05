@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+use std::rc::Rc;
+use crate::nodes::Expression;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Number {
     U8(u8),
@@ -72,8 +76,32 @@ impl std::str::FromStr for Number {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {
-    None,
     Undefined,
     Function(Box<Type>),
     Defined(String),
+}
+
+#[derive(Debug)]
+pub(crate) struct TypeEnvironment {
+    types: HashMap<Rc<String>, Rc<Type>>
+}
+
+impl TypeEnvironment {
+    pub fn new() -> Self {
+        TypeEnvironment {
+            types: HashMap::new()
+        }
+    }
+    
+    pub fn clear(&mut self) {
+        
+    }
+    
+    pub fn assign(&mut self, ident: Rc<String>, type_: Rc<Type>) {
+        
+    }
+    
+    pub fn predict_type(&self, expr: &Expression) -> Type {
+        todo!()
+    }
 }

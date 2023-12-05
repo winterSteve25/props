@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+use std::rc::Rc;
 use crate::error::ParserErr;
 use crate::tokens::Token;
 use crate::lexer::Lexer;
@@ -146,7 +147,7 @@ impl PropsParser {
                         expect!(self, true, Token::TypeAnnotator => Ok(()))?;
                         expect!(self, true, Token::Ident(id) => Ok(Type::Defined(id)))?
                     } else {
-                        Type::None
+                        Type::Undefined
                     };
 
                     params.push((id, type_));
@@ -160,8 +161,12 @@ impl PropsParser {
                         break;
                     }
                 }
-
-                self.parse_function_body()?
+                
+                if peek_match_ignore_ws!(self, 0, Token::FuncOpen) {
+                    self.parse_function_body()?
+                } else { 
+                    vec![AstNode::Return(self.parse_expr()?)]
+                }
             } else {
                 self.parse_function_body()?
             };
@@ -169,7 +174,7 @@ impl PropsParser {
             Ok(Expression::FuncLiteral {
                 params,
                 statements,
-                return_type: Type::None,
+                return_type: Type::Undefined,
             })
         } else {
             Ok(Expression::MathExpr(self.parse_math_expr()?))
@@ -243,13 +248,13 @@ impl PropsParser {
         if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) {
             expect!(self, true, Token::TypeAnnotator => Ok(()))?;
             let type_ = expect!(self, true, Token::Ident(str) => Ok(str))?;
-            return Ok(Identifier::Identifier(str, Type::Defined(type_)));
+            return Ok(Identifier::Identifier(Rc::new(str), Rc::new(Type::Defined(type_))));
         }
 
-        let mut ident = Identifier::Identifier(str, Type::Undefined);
+        let mut ident = Identifier::Identifier(Rc::new(str), Rc::new(Type::Undefined));
         while peek_match_ignore_ws!(self, 0, Token::Period) {
             expect!(self, true, Token::Period => Ok(()))?;
-            let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(str, Type::None)))?;
+            let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(Rc::new(str), Rc::new(Type::Undefined))))?;
             ident = Identifier::Accessor(Box::new(ident), Box::new(rhs));
         }
 

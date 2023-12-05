@@ -4,5 +4,4 @@ members = [
 	"props_parser",
 	"props_lsp",
 	"props_transpiler",
-	"tests",
 ]

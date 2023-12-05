@@ -1,3 +1,4 @@
+use std::rc::Rc;
 use crate::types::{Number, Type};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -33,7 +34,7 @@ impl Expression {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Identifier {
-    Identifier(String, Type),
+    Identifier(Rc<String>, Rc<Type>),
     Accessor(Box<Identifier>, Box<Identifier>),
     Compound(Vec<Identifier>),
 }
