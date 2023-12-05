@@ -28,10 +28,9 @@ impl PropsPipeline {
         self.parser.init(source);
         self.type_environment.clear();
         
-        let (mut ast, mut errs) = self.parser.parse();
+        let (ast, mut errs) = self.parser.parse();
         
         self.typer.process(&ast, &mut self.type_environment);
-        
         errs.append(&mut self.type_checker.analyze(&ast, &self.type_environment));
         
         (ast, errs)

@@ -79,6 +79,7 @@ pub enum Type {
     Undefined,
     Function(Box<Type>),
     Defined(String),
+    Compound(Vec<Type>),
 }
 
 #[derive(Debug)]
@@ -98,10 +99,10 @@ impl TypeEnvironment {
     }
     
     pub fn assign(&mut self, ident: Rc<String>, type_: Rc<Type>) {
-        
+        self.types.insert(ident, type_);
     }
     
     pub fn predict_type(&self, expr: &Expression) -> Type {
-        todo!()
+        Type::Undefined
     }
 }

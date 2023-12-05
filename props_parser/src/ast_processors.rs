@@ -1,5 +1,4 @@
 use std::rc::Rc;
-use crate::error::ParserErr;
 use crate::nodes::{AstNode, Expression, Identifier};
 use crate::types::{Type, TypeEnvironment};
 

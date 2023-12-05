@@ -1,3 +1,1 @@
-add = |a b| a + b
-
-var: I32 = add (add 1 2) 8
+var = add (add 1 2) 8

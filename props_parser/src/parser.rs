@@ -115,7 +115,8 @@ impl PropsParser {
         }
 
         if peek_match_ignore_ws!(self, 0, Token::Return) {
-            expect!(self, true, Token::Return => Ok(()))?;
+            self.skip_empty();
+            self.next();
             let expr = self.parse_expr()?;
             return Ok(Some(AstNode::Return(expr)));
         }
@@ -124,7 +125,8 @@ impl PropsParser {
 
         // regular assignment
         if peek_match_ignore_ws!(self, 0, Token::Assignment) {
-            expect!(self, true, Token::Assignment => Ok(()))?;
+            self.skip_empty();
+            self.next();
             let expr = self.parse_expr()?;
             return Ok(Some(AstNode::Assignment(ident, expr)));
         }
@@ -144,8 +146,9 @@ impl PropsParser {
                 loop {
                     let id = expect!(self, true, Token::Ident(id) => Ok(id))?;
                     let type_ = if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) {
-                        expect!(self, true, Token::TypeAnnotator => Ok(()))?;
-                        expect!(self, true, Token::Ident(id) => Ok(Type::Defined(id)))?
+                        self.skip_empty();
+                        self.next();
+                        self.parse_type()?
                     } else {
                         Type::Undefined
                     };
@@ -157,7 +160,8 @@ impl PropsParser {
                     }
 
                     if peek_match_ignore_ws!(self, 0, Token::Pipe) {
-                        expect!(self, true, Token::Pipe => Ok(()))?;
+                        self.skip_empty();
+                        self.next();
                         break;
                     }
                 }
@@ -181,7 +185,8 @@ impl PropsParser {
         }?;
 
         while peek_match_ignore_ws!(self, 0, Token::Comma) {
-            expect!(self, true, Token::Comma => Ok(()))?;
+            self.skip_empty();
+            self.next();
             let expr2 = self.parse_expr()?;
             expr = expr.compound(expr2);
         }
@@ -209,7 +214,7 @@ impl PropsParser {
 
     fn parse_ws_delimited_exprs(&mut self) -> Result<Vec<Expression>, ParserErr> {
         if let Some((Token::Whitespace, _)) = self.peek() {
-            expect!(self, false, Token::Whitespace => Ok(()))?;
+            self.next();
             
             self.parsing_ws_delim = true;
             let mut exprs: Vec<Expression> = Vec::new();
@@ -229,12 +234,33 @@ impl PropsParser {
             Ok(vec![])
         }
     }
+    
+    fn parse_type(&mut self) -> Result<Type, ParserErr> {
+        if peek_match_ignore_ws!(self, 0, Token::ParenthOpen) {
+            self.skip_empty();
+            self.next();
+            let mut types = vec![Type::Defined(expect!(self, true, Token::Ident(str) => Ok(str))?)];
+            
+            while peek_match_ignore_ws!(self, 0, Token::Comma) {
+                self.skip_empty();
+                self.next();
+                types.push(Type::Defined(expect!(self, true, Token::Ident(str) => Ok(str))?));
+            }
+            
+            expect!(self, true, Token::ParenthClose => Ok(()))?;
+            return Ok(Type::Compound(types));
+        }
+
+        let type_ = expect!(self, true, Token::Ident(str) => Ok(str))?;
+        Ok(Type::Defined(type_))
+    }
 
     pub fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
         let mut ident = self.parse_simple_ident()?;
 
         while peek_match_ignore_ws!(self, 0, Token::Comma) {
-            expect!(self, true, Token::Comma => Ok(()))?;
+            self.skip_empty();
+            self.next();
             let rhs = self.parse_simple_ident()?;
             ident = ident.compound(rhs);
         }
@@ -246,14 +272,16 @@ impl PropsParser {
         let str = expect!(self, true, Token::Ident(str) => Ok(str))?;
 
         if peek_match_ignore_ws!(self, 0, Token::TypeAnnotator) {
-            expect!(self, true, Token::TypeAnnotator => Ok(()))?;
-            let type_ = expect!(self, true, Token::Ident(str) => Ok(str))?;
-            return Ok(Identifier::Identifier(Rc::new(str), Rc::new(Type::Defined(type_))));
+            self.skip_empty();
+            self.next();
+            let type_ = self.parse_type()?;
+            return Ok(Identifier::Identifier(Rc::new(str), Rc::new(type_)));
         }
 
         let mut ident = Identifier::Identifier(Rc::new(str), Rc::new(Type::Undefined));
         while peek_match_ignore_ws!(self, 0, Token::Period) {
-            expect!(self, true, Token::Period => Ok(()))?;
+            self.skip_empty();
+            self.next();
             let rhs = expect!(self, true, Token::Ident(str) => Ok(Identifier::Identifier(Rc::new(str), Rc::new(Type::Undefined))))?;
             ident = Identifier::Accessor(Box::new(ident), Box::new(rhs));
         }
@@ -304,7 +332,8 @@ impl PropsParser {
 
     fn parse_parenth_expr(&mut self) -> Result<MathExpr, ParserErr> {
         if peek_match_ignore_ws!(self, 0, Token::ParenthOpen) {
-            expect!(self, true, Token::ParenthOpen => Ok(()))?;
+            self.skip_empty();
+            self.next();
             self.ws_delim_in_parenth = true;
             let result = self.parse_math_expr()?;
             self.ws_delim_in_parenth = false;
@@ -317,7 +346,8 @@ impl PropsParser {
 
     fn parse_unary_expr(&mut self) -> Result<MathExpr, ParserErr> {
         if peek_match_ignore_ws!(self, 0, Token::Subtraction) {
-            expect!(self, true, Token::Subtraction => Ok(()))?;
+            self.skip_empty();
+            self.next();
             Ok(MathExpr::Negate(Box::new(self.parse_parenth_expr()?)))
         } else {
             if peek_match_ignore_ws!(self, 0, Token::Number(_)) { 
