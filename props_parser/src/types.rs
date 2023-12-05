@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::nodes::Expression;
+use std::str::FromStr;
+use crate::nodes::{Expression, MathExpr};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Number {
@@ -65,7 +66,7 @@ impl Number {
     }
 }
 
-impl std::str::FromStr for Number {
+impl FromStr for Number {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -80,6 +81,12 @@ pub enum Type {
     Function(Box<Type>),
     Defined(String),
     Compound(Vec<Type>),
+}
+
+impl From<String> for Type {
+    fn from(value: String) -> Self {
+        Type::Defined(value)
+    }
 }
 
 #[derive(Debug)]
@@ -103,6 +110,19 @@ impl TypeEnvironment {
     }
     
     pub fn predict_type(&self, expr: &Expression) -> Type {
+        // match expr {
+        //     Expression::MathExpr(expr) => match expr {
+        //         MathExpr::Literal(literal) => Type::
+        //         MathExpr::Identifier(_) => {}
+        //         MathExpr::BinaryOp(_, _, _) => {}
+        //         MathExpr::Negate(_) => {}
+        //         MathExpr::FuncCall(_, _) => {}
+        //     }
+        //     Expression::StrLiteral(_) => {}
+        //     Expression::Compound(_) => {}
+        //     Expression::FuncLiteral { .. } => {}
+        // }
+        
         Type::Undefined
     }
 }

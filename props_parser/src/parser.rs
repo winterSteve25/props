@@ -239,12 +239,12 @@ impl PropsParser {
         if peek_match_ignore_ws!(self, 0, Token::ParenthOpen) {
             self.skip_empty();
             self.next();
-            let mut types = vec![Type::Defined(expect!(self, true, Token::Ident(str) => Ok(str))?)];
+            let mut types: Vec<Type> = vec![expect!(self, true, Token::Ident(str) => Ok(str))?.into()];
             
             while peek_match_ignore_ws!(self, 0, Token::Comma) {
                 self.skip_empty();
                 self.next();
-                types.push(Type::Defined(expect!(self, true, Token::Ident(str) => Ok(str))?));
+                types.push(expect!(self, true, Token::Ident(str) => Ok(str))?.into());
             }
             
             expect!(self, true, Token::ParenthClose => Ok(()))?;
@@ -252,7 +252,7 @@ impl PropsParser {
         }
 
         let type_ = expect!(self, true, Token::Ident(str) => Ok(str))?;
-        Ok(Type::Defined(type_))
+        Ok(type_.into())
     }
 
     pub fn parse_ident(&mut self) -> Result<Identifier, ParserErr> {
