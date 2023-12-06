@@ -1,5 +1,5 @@
-use crate::analysis::PropsTypeChecker;
-use crate::ast_processors::PropsTyper;
+use thiserror::__private::AsDisplay;
+use crate::types::typer::PropsTyper;
 use crate::error::ParserErr;
 use crate::nodes::AstNode;
 use crate::parser::PropsParser;
@@ -9,7 +9,6 @@ pub struct PropsPipeline {
     parser: PropsParser,
     type_environment: TypeEnvironment,
     typer: PropsTyper,
-    type_checker: PropsTypeChecker,
 }
 
 impl PropsPipeline {
@@ -19,7 +18,6 @@ impl PropsPipeline {
         PropsPipeline {
             parser,
             typer: PropsTyper,
-            type_checker: PropsTypeChecker,
             type_environment: type_env,
         }
     }
@@ -28,12 +26,14 @@ impl PropsPipeline {
         self.parser.init(source);
         self.type_environment.clear();
         
-        let (ast, mut errs) = self.parser.parse();
+        let (ast, _) = self.parser.parse();
+        let mut type_errs = vec![];
+        self.typer.process(&ast, &mut self.type_environment, &mut type_errs);
+        for err in type_errs.iter() {
+            eprintln!("{}", err);
+        }
         
-        self.typer.process(&ast, &mut self.type_environment);
-        errs.append(&mut self.type_checker.analyze(&ast, &self.type_environment));
-        
-        (ast, errs)
+        (ast, type_errs)
     }
 }
 

@@ -5,6 +5,7 @@ use crate::tokens::Token;
 use crate::lexer::Lexer;
 use crate::nodes::{AstNode, Expression, Identifier, MathExpr, MathOp};
 use crate::types::Type;
+use crate::util::Access;
 
 /**
  * Given pattern(s) to match with, returns a Err(ParserErr) if no matches found, if found, returns the result of the expression
@@ -239,12 +240,12 @@ impl PropsParser {
         if peek_match_ignore_ws!(self, 0, Token::ParenthOpen) {
             self.skip_empty();
             self.next();
-            let mut types: Vec<Type> = vec![expect!(self, true, Token::Ident(str) => Ok(str))?.into()];
+            let mut types: Vec<Access<Type>> = vec![Access::Owned(expect!(self, true, Token::Ident(str) => Ok(str))?.into())];
             
             while peek_match_ignore_ws!(self, 0, Token::Comma) {
                 self.skip_empty();
                 self.next();
-                types.push(expect!(self, true, Token::Ident(str) => Ok(str))?.into());
+                types.push(Access::Owned(expect!(self, true, Token::Ident(str) => Ok(str))?.into()));
             }
             
             expect!(self, true, Token::ParenthClose => Ok(()))?;

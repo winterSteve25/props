@@ -1,6 +1,9 @@
 use colored::Colorize;
+use log::error;
 use thiserror::Error;
 use crate::tokens::Token;
+use crate::types::Type;
+use crate::util::Access;
 
 #[derive(Error, Debug)]
 pub enum ParserErr {
@@ -10,6 +13,11 @@ pub enum ParserErr {
         pos: usize,
         token: Token,
     },
+    #[error("Can not assign type {type_1} to an identifier of type {type_2}")]
+    UnmatchedTypes {
+        type_1: Access<Type>,
+        type_2: Access<Type>,
+    }
 }
 
 impl ParserErr {
@@ -19,6 +27,7 @@ impl ParserErr {
 
         let (line, pos, token) = match self {
             ParserErr::UnexpectedToken { line, pos, token } => (line, pos, token),
+            _ => (&0, &0, &Token::Newline)
         };
 
         let text = &source[*line - 1];
